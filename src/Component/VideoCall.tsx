@@ -7,13 +7,14 @@ const VideoCall = () => {
   const myVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const pcRef = useRef<RTCPeerConnection>();
+  const SGINAL_SERVER = 'http://10.100.203.62:3002'
 
   //const { roomName } = useParams();
 
   const getMedia = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        //video: true,
+        video: true,
         audio: true,
       });
 
@@ -61,7 +62,7 @@ const VideoCall = () => {
       return;
     }
     try {
-        const sdp = await pcRef.current.createOffer();
+        const sdp  = await pcRef.current.createOffer();
         pcRef.current.setLocalDescription(sdp);
         console.log("sent the offer", sdp);
 
@@ -95,7 +96,7 @@ const VideoCall = () => {
 //   };
 
   useEffect(() => {
-    socketRef.current = io("192.168.200.197:3002");
+    socketRef.current = io(SGINAL_SERVER);
 
     console.log("setting stun")
     pcRef.current = new RTCPeerConnection({
@@ -127,17 +128,23 @@ const VideoCall = () => {
         }
 
         // Parse the JSON string into an object
-        const answerObject = JSON.parse(answer);
-        console.log('answerObject', answerObject)
+        //const answerObject = JSON.parse(answer);
+        //console.log('answerObject', answerObject)
 
         // Parse the JSON values directly into RTCSessionDescription
-        const rtcSessionDescription = new RTCSessionDescription({
-            sdp: answerObject.sdp,
-            type: answerObject.type,
-        });
+        // const rtcSessionDescription = new RTCSessionDescription({
+        //     sdp: answerObject.sdp,
+        //     type: answerObject.type,
+        // });
 
-        console.log('seeting rtcSessionDescription in pcRef', rtcSessionDescription)
-        pcRef.current.setRemoteDescription(rtcSessionDescription);
+        //console.log('seeting rtcSessionDescription in pcRef', rtcSessionDescription)
+        //pcRef.current.setRemoteDescription(rtcSessionDescription);
+        const rtcSessionDescription = new RTCSessionDescription({
+          sdp: answer.sdp,
+          type: answer.type,
+        })
+
+        pcRef.current.setRemoteDescription( rtcSessionDescription)
     });
 
     console.log("setting ice")
@@ -149,18 +156,12 @@ const VideoCall = () => {
         }
 
         try {
-            // Parse the JSON string into an object
-            const iceDataObj = JSON.parse(iceData);
-    
-            console.log('Parsed iceData:', iceDataObj);
-    
             // Check if the expected properties are present
-            if (iceDataObj.sdpMid != null && iceDataObj.sdpMLineIndex != null) {
+            if (iceData.sdpMid != null && iceData.sdpMLineIndex != null) {
                 const iceCandidate = new RTCIceCandidate({
-                    candidate: iceDataObj.candidate,
-                    sdpMid: iceDataObj.sdpMid,
-                    sdpMLineIndex: iceDataObj.sdpMLineIndex,
-                    usernameFragment: iceDataObj.usernameFragment,
+                    candidate: iceData.candidate,
+                    sdpMid: iceData.sdpMid,
+                    sdpMLineIndex: iceData.sdpMLineIndex,
                 });
     
                 console.log('Adding iceCandidate:', iceCandidate);
@@ -170,6 +171,29 @@ const VideoCall = () => {
         } catch (error) {
             console.error('Error parsing iceData:', error);
         }
+
+        // try {
+        //     // Parse the JSON string into an object
+        //     const iceDataObj = JSON.parse(iceData);
+    
+        //     console.log('Parsed iceData:', iceDataObj);
+    
+        //     // Check if the expected properties are present
+        //     if (iceDataObj.sdpMid != null && iceDataObj.sdpMLineIndex != null) {
+        //         const iceCandidate = new RTCIceCandidate({
+        //             candidate: iceDataObj.candidate,
+        //             sdpMid: iceDataObj.sdpMid,
+        //             sdpMLineIndex: iceDataObj.sdpMLineIndex,
+        //             usernameFragment: iceDataObj.usernameFragment,
+        //         });
+    
+        //         console.log('Adding iceCandidate:', iceCandidate);
+    
+        //         await pcRef.current.addIceCandidate(iceCandidate);
+        //     }
+        // } catch (error) {
+        //     console.error('Error parsing iceData:', error);
+        // }
       
     });
 
